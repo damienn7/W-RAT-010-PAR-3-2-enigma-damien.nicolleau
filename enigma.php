@@ -120,13 +120,22 @@
             } else {
                 $flip_arr = array_flip($dictionnary);
                 $divide = ($initial_pos + $hash_key) / 25;
+                // echo "initial_pos : ".$initial_pos."<br>";
+                // echo "hash_key : ".$hash_key."<br>";
+                // echo "divide : ".$divide."<br>";
+                // echo "addition : ".($initial_pos + $hash_key)."<br>";
                 $merge_arr = $flip_arr;
-                for ($i=0; $i < $divide; $i++) {
+                // var_dump($flip_arr);
+                for ($i=0; $i < round($divide); $i++) {
                     $merge_arr = array_merge($merge_arr, $flip_arr);
                 }
-    
+                // echo "<pre>";
+                // var_dump($merge_arr);
+                // echo "</pre>";
+
                 $j = 0;
-                foreach ($flip_arr as $letter_position => $letter_name) {
+                foreach ($merge_arr as $letter_position => $letter_name) {
+                    echo "letter name : ".$letter_name."<br>";
                     if ($j == ($initial_pos + $hash_key)) {
                         return $letter_name;
                     }
@@ -134,7 +143,18 @@
                 }
             }
         } else {
-
+            $initial_pos = $dictionnary[$letter];
+            if (($initial_pos - $hash_key) >= 0) {
+                foreach ($dictionnary as $letter_name => $letter_position) {
+                    if (($initial_pos - $hash_key) == $letter_position) {
+                        return $letter_name;
+                    }
+                }
+            } else {
+                $letter_unhash_position = ($hash_key >= $initial_pos) ? 26 - ($hash_key - $initial_pos) : $initial_pos - $hash_key ;
+                // echo $letter_unhash_position."<br>";
+                return array_flip($dictionnary)[$letter_unhash_position];
+            }
         }
 
         return "";
@@ -152,16 +172,16 @@
         $hash_key = (!empty(htmlspecialchars($_POST['cesar-key']))) ? htmlspecialchars($_POST['cesar-key']) : 2;
         switch ($type) {
             case 'cesar':
-                if ($hash) {
-                    $chain = "";
-                    for ($i = 0; $i < strlen($word); $i++) {
-                        $letter = $word[$i];
-                        if (strtolower($dictionnary[$letter]) != null) {
-                            $chain .= cesar_calc(strtolower($letter), $hash_key, $dictionnary);
-                        } else {
-                            $chain .= $letter;
-                        }
+                $chain = "";
+                for ($i = 0; $i < strlen($word); $i++) {
+                    $letter = $word[$i];
+                    if (strtolower($dictionnary[$letter]) != null) {
+                        $chain .= cesar_calc(strtolower($letter), $hash_key, $dictionnary, $hash);
+                    } else {
+                        $chain .= $letter;
                     }
+                }
+                if ($hash) {
                 } else {
                 }
                 break;
