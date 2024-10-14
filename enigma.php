@@ -183,11 +183,38 @@
     {
         if ($hash == "hash") {
             return $vigenere_table[$dictionnary[$repeat_key_letter]][$dictionnary[$letter]];
-        } elseif($hash == "unhash") {
+        } elseif ($hash == "unhash") {
             $index = array_flip($vigenere_table[$dictionnary[$repeat_key_letter]])[ucfirst($letter)];
             return array_flip($dictionnary)[$index];
         }
     }
+
+        // $chain .= vigenere_calc(strtolower($repeat_key[$i]), $letter, $vigenere_table, $hash, $dictionnary);
+        function mask_calc($repeat_key_letter, $letter, $vigenere_table, $hash, $dictionnary)
+        {
+            if ($hash == "hash") {
+                $add = $dictionnary[$repeat_key_letter] + $dictionnary[$letter];
+                echo $add;
+                if ($add <= 25) {
+                    return array_flip($dictionnary)[$add];
+                } else {
+                    $sous = $add - 25;
+                    return array_flip($dictionnary)[$sous];
+                }
+                // return $vigenere_table[$dictionnary[$repeat_key_letter]][$dictionnary[$letter]];
+            } elseif ($hash == "unhash") {
+                $sous = $dictionnary[$repeat_key_letter] - $dictionnary[$letter];
+                echo $sous;
+                if ($sous >= 0) {
+                    return array_flip($dictionnary)[$sous];
+                } else {
+                    $add = $sous + 25;
+                    return array_flip($dictionnary)[$sous];
+                }
+                // $index = array_flip($vigenere_table[$dictionnary[$repeat_key_letter]])[ucfirst($letter)];
+                // return array_flip($dictionnary)[$index];
+            }
+        }
 
     if ($_SERVER['REQUEST_METHOD'] == "POST") {
         // var_dump($_POST);
@@ -201,6 +228,8 @@
         $hash_key = (!empty(htmlspecialchars($_POST['cesar-key']))) ? htmlspecialchars($_POST['cesar-key']) : 2;
         // hash key for vigenere algorythm
         $hash_key_vigenere = (!empty(htmlspecialchars($_POST['vigenere-key']))) ? htmlspecialchars($_POST['vigenere-key']) : "MUSIQUE";
+        // hash key for mask algorythm
+        $hash_key_mask = (!empty(htmlspecialchars($_POST['mask-key']))) ? htmlspecialchars($_POST['mask-key']) : "";
         switch ($type) {
             case 'cesar':
                 $chain = "";
@@ -216,16 +245,10 @@
             case 'vigenere':
                 // to do
                 $vigenere_table = generateVigenereTable();
-                // var_dump($vigenere_table);
                 $repeat_word = $hash_key_vigenere;
                 $repeat_word_const = $repeat_word;
                 $repeat_key = "";
                 $x = 0;
-                // echo $hash;
-                // echo "<pre>";
-                // var_dump($_POST);
-                // echo "</pre>";
-                // echo "chain : ".$chain;
                 for ($i = 0; $i < strlen($word); $i++) {
                     if ($dictionnary[strtolower($word[$i])] != null || is_int($dictionnary[strtolower($word[$i])])) {
                         if ($repeat_word[$x] != null) {
@@ -249,20 +272,41 @@
                         $chain .= $letter;
                     }
                 }
-                // echo $repeat_key;
-                // echo "<pre>";
-                // var_dump($vigenere_table);
-                // echo "</pre>";
                 break;
             case 'masque':
                 // to do
+                $vigenere_table = generateVigenereTable();
+                if (strlen($hash_key_mask) == 0 || $hash != "unhash") {
+                    for ($i = 0; $i < strlen($word); $i++) {
+                        $rd_int = random_int(0, 25);
+                        $letter = strtolower($word[$i]);
+                        if (strtolower($dictionnary[$letter]) != null) {
+                            $repeat_word .= array_flip($dictionnary)[$rd_int];
+                        } else {
+                            $repeat_word .= $word[$i];
+                        }
+                    }
+                } else {
+                    $repeat_word = $hash_key_mask;
+                }
+                echo "repeat word : " . $repeat_word."<br>";
+
+                $chain = "";
+                for ($i = 0; $i < strlen($word); $i++) {
+                    $letter = strtolower($word[$i]);
+                    if (strtolower($dictionnary[$letter]) != null) {
+                        $chain .= vigenere_calc(strtolower($repeat_word[$i]), $letter, $vigenere_table, $hash, $dictionnary);
+                    } else {
+                        $chain .= $letter;
+                    }
+                }
                 break;
             default:
-                // to do
+                $chain = "Aucun résultat";
                 break;
         }
     } else {
-        $computed = "Aucun résultat";
+        $chain = "Aucun résultat";
     }
     ?>
     <form action="enigma.php" method="POST">
@@ -284,6 +328,10 @@
             <div class="elToAppendVigenere" style="">
                 <label for="vigenere-key">Choisir la clé de chiffrement (texte)</label>
                 <input id="vigenere-key" name="vigenere-key" type="text" min="2" max="26">
+            </div>
+            <div class="elToAppendMask" style="display: none;">
+                <label for="mask-key">Choisir la clé de chiffrement (texte >= au mot ou à la phrase à chiffrer)<?php if (isset($repeat_word) && strlen($repeat_word) > 0): ?><span style="color: green;">Clé générée : <?= $repeat_word ?></span><?php endif; ?></label>
+                <input id="mask-key" name="mask-key" type="text" min="2" max="26">
             </div>
         </div>
         <div class="group">
@@ -318,6 +366,12 @@
                     document.querySelector(".elToAppendVigenere").style.display = "";
                 } else {
                     document.querySelector(".elToAppendVigenere").style.display = "none";
+                }
+
+                if (e.target.value == "masque") {
+                    document.querySelector(".elToAppendMask").style.display = "";
+                } else {
+                    document.querySelector(".elToAppendMask").style.display = "none";
                 }
 
             })
