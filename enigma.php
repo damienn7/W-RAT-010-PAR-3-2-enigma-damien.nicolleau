@@ -59,7 +59,7 @@
         }
 
         form>.group {
-            height: calc(100%/3);
+            height: calc(100%/2.5);
         }
 
         .btn-submit {
@@ -70,7 +70,7 @@
         .computed {
             height: 35vh;
             color: white;
-            margin: 6rem 0.5rem 3rem 0.5rem;
+            margin: 10rem 0.5rem 3rem 0.5rem;
             width: 30vw;
         }
     </style>
@@ -108,7 +108,8 @@
         "z" => 25
     ];
 
-    function cesar_calc($letter, $hash_key, $dictionnary, $action ="hash") {
+    function cesar_calc($letter, $hash_key, $dictionnary, $action = "hash")
+    {
         if ($action == "hash") {
             $initial_pos = $dictionnary[$letter];
             if (($initial_pos + $hash_key) <= 25) {
@@ -126,7 +127,7 @@
                 // echo "addition : ".($initial_pos + $hash_key)."<br>";
                 $merge_arr = $flip_arr;
                 // var_dump($flip_arr);
-                for ($i=0; $i < round($divide); $i++) {
+                for ($i = 0; $i < round($divide); $i++) {
                     $merge_arr = array_merge($merge_arr, $flip_arr);
                 }
                 // echo "<pre>";
@@ -135,7 +136,7 @@
 
                 $j = 0;
                 foreach ($merge_arr as $letter_position => $letter_name) {
-                    echo "letter name : ".$letter_name."<br>";
+                    echo "letter name : " . $letter_name . "<br>";
                     if ($j == ($initial_pos + $hash_key)) {
                         return $letter_name;
                     }
@@ -151,13 +152,41 @@
                     }
                 }
             } else {
-                $letter_unhash_position = ($hash_key >= $initial_pos) ? 26 - ($hash_key - $initial_pos) : $initial_pos - $hash_key ;
+                $letter_unhash_position = ($hash_key >= $initial_pos) ? 26 - ($hash_key - $initial_pos) : $initial_pos - $hash_key;
                 // echo $letter_unhash_position."<br>";
                 return array_flip($dictionnary)[$letter_unhash_position];
             }
         }
 
         return "";
+    }
+
+    function generateVigenereTable()
+    {
+        $table = [];
+        $alphabet = range('A', 'Z'); // Alphabet de A à Z
+
+        for ($i = 0; $i < 26; $i++) {
+            $row = [];
+            for ($j = 0; $j < 26; $j++) {
+                // On déplace l'index de l'alphabet circulairement
+                $row[] = $alphabet[($i + $j) % 26];
+            }
+            $table[] = $row;
+        }
+
+        return $table;
+    }
+
+    // $chain .= vigenere_calc(strtolower($repeat_key[$i]), $letter, $vigenere_table, $hash, $dictionnary);
+    function vigenere_calc($repeat_key_letter, $letter, $vigenere_table, $hash, $dictionnary)
+    {
+        if ($hash == "hash") {
+            return $vigenere_table[$dictionnary[$repeat_key_letter]][$dictionnary[$letter]];
+        } elseif($hash == "unhash") {
+            $index = array_flip($vigenere_table[$dictionnary[$repeat_key_letter]])[ucfirst($letter)];
+            return array_flip($dictionnary)[$index];
+        }
     }
 
     if ($_SERVER['REQUEST_METHOD'] == "POST") {
@@ -170,6 +199,8 @@
         $type = htmlspecialchars($_POST['type']);
         // hash key for cesar algorythm
         $hash_key = (!empty(htmlspecialchars($_POST['cesar-key']))) ? htmlspecialchars($_POST['cesar-key']) : 2;
+        // hash key for vigenere algorythm
+        $hash_key_vigenere = (!empty(htmlspecialchars($_POST['vigenere-key']))) ? htmlspecialchars($_POST['vigenere-key']) : "MUSIQUE";
         switch ($type) {
             case 'cesar':
                 $chain = "";
@@ -181,12 +212,47 @@
                         $chain .= $letter;
                     }
                 }
-                if ($hash) {
-                } else {
-                }
                 break;
             case 'vigenere':
                 // to do
+                $vigenere_table = generateVigenereTable();
+                // var_dump($vigenere_table);
+                $repeat_word = $hash_key_vigenere;
+                $repeat_word_const = $repeat_word;
+                $repeat_key = "";
+                $x = 0;
+                // echo $hash;
+                // echo "<pre>";
+                // var_dump($_POST);
+                // echo "</pre>";
+                // echo "chain : ".$chain;
+                for ($i = 0; $i < strlen($word); $i++) {
+                    if ($dictionnary[strtolower($word[$i])] != null || is_int($dictionnary[strtolower($word[$i])])) {
+                        if ($repeat_word[$x] != null) {
+                            $repeat_key .= $repeat_word[$x];
+                        } else {
+                            $repeat_word .= $repeat_word_const;
+                            $repeat_key .= $repeat_word[$x];
+                        }
+                        $x++;
+                    } else {
+                        $repeat_key .= $word[$i];
+                    }
+                }
+
+                $chain = "";
+                for ($i = 0; $i < strlen($word); $i++) {
+                    $letter = strtolower($word[$i]);
+                    if (strtolower($dictionnary[$letter]) != null) {
+                        $chain .= vigenere_calc(strtolower($repeat_key[$i]), $letter, $vigenere_table, $hash, $dictionnary);
+                    } else {
+                        $chain .= $letter;
+                    }
+                }
+                // echo $repeat_key;
+                // echo "<pre>";
+                // var_dump($vigenere_table);
+                // echo "</pre>";
                 break;
             case 'masque':
                 // to do
@@ -212,8 +278,12 @@
                 <option value="cesar">Chiffrement de César.</option>
             </select>
             <div class="elToAppend" style="display: none;">
-                <label for="cesar-key">Sélectionner la clé de chiffrement</label>
+                <label for="cesar-key">Sélectionner la clé de chiffrement (chiffre)</label>
                 <input id="cesar-key" name="cesar-key" type="number" min="2" max="26">
+            </div>
+            <div class="elToAppendVigenere" style="">
+                <label for="vigenere-key">Choisir la clé de chiffrement (texte)</label>
+                <input id="vigenere-key" name="vigenere-key" type="text" min="2" max="26">
             </div>
         </div>
         <div class="group">
@@ -226,8 +296,8 @@
         <input type="submit" class="btn-submit" value="Lancer l'action">
     </form>
     <div class="computed">
-        <?php 
-        
+        <?php
+
         echo (isset($chain) && strlen($chain) > 0) ? $chain : "Aucun résultat.";
 
         ?>
@@ -243,6 +313,13 @@
                 } else {
                     document.querySelector(".elToAppend").style.display = "none";
                 }
+
+                if (e.target.value == "vigenere") {
+                    document.querySelector(".elToAppendVigenere").style.display = "";
+                } else {
+                    document.querySelector(".elToAppendVigenere").style.display = "none";
+                }
+
             })
         }
     </script>
