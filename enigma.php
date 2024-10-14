@@ -289,7 +289,7 @@
                 } else {
                     $repeat_word = $hash_key_mask;
                 }
-                echo "repeat word : " . $repeat_word."<br>";
+                // echo "repeat word : " . $repeat_word."<br>";
 
                 $chain = "";
                 for ($i = 0; $i < strlen($word); $i++) {
